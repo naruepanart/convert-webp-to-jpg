@@ -20,18 +20,18 @@ This Go program converts all `.webp` images in the current directory to `.jpg` f
 2. Download or clone this repository.
 3. Install the necessary Go package:
 
-   ```bash
-   go get golang.org/x/image/webp
-   ```
+```bash
+go get golang.org/x/image/webp
+```
 
 ## Usage
 
 1. Place the `.webp` files you want to convert in the same directory as the Go program.
 2. Run the program:
 
-   ```bash
-   go run main.go
-   ```
+```bash
+go run main.go
+```
 
 3. The program will convert all `.webp` files in the current directory to `.jpg` format, applying resizing and contrast adjustment.
    
