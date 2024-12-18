@@ -60,9 +60,9 @@ func convertWebPToJPEGWithHDR(inFile, outFile string) error {
 
 	// Apply other adjustments
 	img = imaging.Sharpen(img, 1.5)
-	img = imaging.AdjustBrightness(img, 2)
-	img = imaging.AdjustContrast(img, 20)
-	img = imaging.AdjustSaturation(img, 15)
+	img = imaging.AdjustBrightness(img, 5)
+	img = imaging.AdjustContrast(img, 10)
+	img = imaging.AdjustSaturation(img, 5)
 
 	out, err := os.Create(outFile)
 	if err != nil {
