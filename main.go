@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
+
 	"image/jpeg"
 	"math"
 	"os"
 	"path/filepath"
 
+	"golang.org/x/image/draw"
 	"golang.org/x/image/webp"
 )
 
@@ -51,10 +52,9 @@ func convert(in, out string) error {
 		return fmt.Errorf("decode image: %v", err)
 	}
 
+	// Resize maintaining aspect ratio
 	b := img.Bounds()
 	w, h := b.Dx(), b.Dy()
-
-	// Resize maintaining aspect ratio
 	var resized image.Image
 	if h > w {
 		resized = resize(img, int(float64(w)*1920/float64(h)), 1920)
@@ -62,35 +62,24 @@ func convert(in, out string) error {
 		resized = resize(img, 1920, int(float64(h)*1920/float64(w)))
 	}
 
-	// Adjust contrast and save as JPEG
+	// Adjust contrast
 	adjusted := adjust(resized)
+
+	// Create output file
 	file, err := os.Create(out)
 	if err != nil {
 		return fmt.Errorf("create output: %v", err)
 	}
 	defer file.Close()
 
+	// Encode adjusted image as JPEG
 	return jpeg.Encode(file, adjusted, &jpeg.Options{Quality: 100})
 }
 
 func resize(src image.Image, w, h int) image.Image {
-	srcB := src.Bounds()
-	srcW, srcH := srcB.Dx(), srcB.Dy()
-
-	// Resize directly into a new RGBA image
 	dst := image.NewRGBA(image.Rect(0, 0, w, h))
-
-	// Rescale each pixel
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			srcX := int(float64(x) * float64(srcW) / float64(w))
-			srcY := int(float64(y) * float64(srcH) / float64(h))
-
-			// Set pixel directly (no bounds check here as we are inside the image size)
-			dst.Set(x, y, src.At(srcX, srcY))
-		}
-	}
-
+	// Efficient resizing using the `x/image/draw` package
+	draw.ApproxBiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
 	return dst
 }
 
@@ -99,12 +88,12 @@ func adjust(src image.Image) image.Image {
 	dst := image.NewRGBA(b)
 	draw.Draw(dst, b, src, b.Min, draw.Over)
 
-	// Adjust contrast directly after drawing the image onto dst
+	// Apply contrast adjustment directly
 	applyContrast(dst, 1.2)
 	return dst
 }
 
-func applyContrast(img *image.RGBA, f float64) {
+func applyContrast(img *image.RGBA, factor float64) {
 	b := img.Bounds()
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
@@ -112,9 +101,9 @@ func applyContrast(img *image.RGBA, f float64) {
 			r, g, b, a := c.RGBA()
 
 			// Apply contrast adjustment on RGB values
-			rf := math.Max(0, math.Min(1, ((float64(r>>8)/255.0-0.5)*f)+0.5))
-			gf := math.Max(0, math.Min(1, ((float64(g>>8)/255.0-0.5)*f)+0.5))
-			bf := math.Max(0, math.Min(1, ((float64(b>>8)/255.0-0.5)*f)+0.5))
+			rf := math.Max(0, math.Min(1, ((float64(r>>8)/255.0-0.5)*factor)+0.5))
+			gf := math.Max(0, math.Min(1, ((float64(g>>8)/255.0-0.5)*factor)+0.5))
+			bf := math.Max(0, math.Min(1, ((float64(b>>8)/255.0-0.5)*factor)+0.5))
 
 			// Set the pixel with adjusted color
 			img.Set(x, y, color.RGBA{
