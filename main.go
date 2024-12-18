@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
-	"math"
 	"os"
 	"path/filepath"
 
@@ -22,6 +21,7 @@ func main() {
 	}
 
 	for _, f := range fs {
+		// Only process .webp files (skip directories and non-webp files)
 		if f.IsDir() || filepath.Ext(f.Name()) != ".webp" {
 			continue
 		}
@@ -31,81 +31,81 @@ func main() {
 
 		if err := convert(in, out); err != nil {
 			fmt.Printf("Error converting %s: %v\n", in, err)
-			continue
+		} else {
+			fmt.Printf("Converted: %s -> %s\n", in, out)
 		}
-
-		fmt.Printf("Converted: %s -> %s\n", in, out)
 	}
 }
 
 func convert(in, out string) error {
+	// Open input WebP file
 	f, err := os.Open(in)
 	if err != nil {
-		return fmt.Errorf("open file: %v", err)
+		return fmt.Errorf("failed to open file %s: %v", in, err)
 	}
 	defer f.Close()
 
 	// Decode WebP image
 	img, err := webp.Decode(f)
 	if err != nil {
-		return fmt.Errorf("decode image: %v", err)
+		return fmt.Errorf("failed to decode image %s: %v", in, err)
 	}
 
-	// Resize maintaining aspect ratio
-	b := img.Bounds()
-	w, h := b.Dx(), b.Dy()
+	// Resize image while maintaining aspect ratio
+	bounds := img.Bounds()
 	var resized image.Image
-	if h > w {
-		resized = resize(img, int(float64(w)*1920/float64(h)), 1920)
+	if bounds.Dy() > bounds.Dx() {
+		// Landscape (height > width): Resize based on width
+		resized = resize(img, int(float64(bounds.Dx())*1920/float64(bounds.Dy())), 1920)
 	} else {
-		resized = resize(img, 1920, int(float64(h)*1920/float64(w)))
+		// Portrait (width > height): Resize based on height
+		resized = resize(img, 1920, int(float64(bounds.Dy())*1920/float64(bounds.Dx())))
 	}
 
-	// Adjust contrast
+	// Adjust contrast of the resized image
 	adjusted := adjust(resized)
 
 	// Create output file
 	file, err := os.Create(out)
 	if err != nil {
-		return fmt.Errorf("create output: %v", err)
+		return fmt.Errorf("failed to create output file %s: %v", out, err)
 	}
 	defer file.Close()
 
-	// Encode adjusted image as JPEG
+	// Encode the adjusted image as JPEG
 	return jpeg.Encode(file, adjusted, &jpeg.Options{Quality: 100})
 }
 
 func resize(src image.Image, w, h int) image.Image {
 	dst := image.NewRGBA(image.Rect(0, 0, w, h))
-	// Efficient resizing using the `x/image/draw` package
+	// Use x/image/draw for efficient resizing
 	draw.ApproxBiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
 	return dst
 }
 
 func adjust(src image.Image) image.Image {
-	b := src.Bounds()
-	dst := image.NewRGBA(b)
-	draw.Draw(dst, b, src, b.Min, draw.Over)
+	bounds := src.Bounds()
+	dst := image.NewRGBA(bounds)
 
-	// Apply contrast adjustment directly
-	applyContrast(dst, 1.2)
+	// Apply contrast adjustment
+	applyContrast(dst, src, 1.2)
 	return dst
 }
 
-func applyContrast(img *image.RGBA, factor float64) {
-	b := img.Bounds()
-	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			c := img.At(x, y)
+func applyContrast(dst *image.RGBA, src image.Image, factor float64) {
+	bounds := dst.Bounds()
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			c := src.At(x, y)
 			r, g, b, a := c.RGBA()
 
-			// Apply contrast adjustment on RGB values
-			rf := math.Max(0, math.Min(1, ((float64(r>>8)/255.0-0.5)*factor)+0.5))
-			gf := math.Max(0, math.Min(1, ((float64(g>>8)/255.0-0.5)*factor)+0.5))
-			bf := math.Max(0, math.Min(1, ((float64(b>>8)/255.0-0.5)*factor)+0.5))
+			// Apply contrast adjustment
+			rf := clamp((float64(r>>8)/255.0-0.5)*factor + 0.5)
+			gf := clamp((float64(g>>8)/255.0-0.5)*factor + 0.5)
+			bf := clamp((float64(b>>8)/255.0-0.5)*factor + 0.5)
 
-			// Set the pixel with adjusted color
-			img.Set(x, y, color.RGBA{
+			// Set the adjusted color value
+			dst.Set(x, y, color.RGBA{
 				R: uint8(rf * 255),
 				G: uint8(gf * 255),
 				B: uint8(bf * 255),
@@ -113,4 +113,14 @@ func applyContrast(img *image.RGBA, factor float64) {
 			})
 		}
 	}
+}
+
+// Helper function to clamp values between 0 and 1
+func clamp(val float64) float64 {
+	if val < 0 {
+		return 0
+	} else if val > 1 {
+		return 1
+	}
+	return val
 }
