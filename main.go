@@ -45,6 +45,20 @@ func convertWebPToJPEGWithHDR(inFile, outFile string) error {
 		return fmt.Errorf("decode image: %v", err)
 	}
 
+	// Get image dimensions
+	width := img.Bounds().Dx()
+	height := img.Bounds().Dy()
+
+	// Resize based on orientation
+	if height > width {
+		// Portrait: Resize height to 1920 and maintain aspect ratio
+		img = imaging.Resize(img, int(float64(width)*1920/float64(height)), 1920, imaging.Lanczos)
+	} else {
+		// Landscape: Resize width to 1920 and maintain aspect ratio
+		img = imaging.Resize(img, 1920, int(float64(height)*1920/float64(width)), imaging.Lanczos)
+	}
+
+	// Apply other adjustments
 	img = imaging.Sharpen(img, 1.5)
 	img = imaging.AdjustBrightness(img, 10)
 	img = imaging.AdjustContrast(img, 20)
