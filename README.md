@@ -49,7 +49,7 @@ The program will:
 
 - Read all files in the folder.
 - Convert each `.webp` file to `.jpg` with the same name, applying the following adjustments:
-  - Sharpening: 1.5x strength
+  - Sharpening: 1.2x strength
   - Brightness: +5
   - Contrast: +10
   - Saturation: +5
