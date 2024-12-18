@@ -62,7 +62,6 @@ If the folder contains a file named `image.webp`, the output file will be `image
 ## Error Handling
 
 - If the program fails to read the folder or process any files, it will output a corresponding error message.
-- It will skip non-`.webp` files and directories automatically.
 
 ## License
 
