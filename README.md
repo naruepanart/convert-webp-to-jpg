@@ -1,68 +1,82 @@
-# WebP to JPEG Converter with HDR Adjustments
+# WebP to JPEG Converter with HDR Adjustment
 
-This Go program converts all `.webp` images in a specified folder to `.jpg` format while applying High Dynamic Range (HDR) adjustments. It uses the `disintegration/imaging` package to enhance the images with sharpening, brightness, contrast, and saturation adjustments.
+This Go program converts `.webp` images in a specified folder into `.jpg` format while applying various image enhancements. It performs the following steps:
+- Resizes images based on orientation (portrait or landscape).
+- Sharpens the image.
+- Adjusts contrast and saturation.
+- Converts the image to JPEG with HDR-like adjustments.
 
 ## Features
-
-- Converts `.webp` files to `.jpg` format.
-- Applies HDR-like adjustments:
-  - Sharpens the image.
-  - Adjusts brightness, contrast, and saturation.
-- Processes all `.webp` files in the current folder.
-- Efficient and minimal error handling.
+- Automatically processes all `.webp` files in the current directory.
+- Resizes images based on their orientation, ensuring that portrait images are resized to a maximum height of 1920 pixels and landscape images are resized to a maximum width of 1920 pixels.
+- Applies image adjustments such as sharpening, contrast, and saturation to enhance the image.
+- Saves the output as high-quality `.jpg` files with 100% quality.
 
 ## Requirements
-
-- Go 1.16+ (for `os.ReadDir`)
-- Go modules enabled
+- Go 1.18+.
 - Dependencies:
-  - `github.com/disintegration/imaging` for image manipulation.
-  - `golang.org/x/image/webp` for WebP image decoding.
+  - [`disintegration/imaging`](https://github.com/disintegration/imaging): for image manipulation tasks like resizing, sharpening, and adjusting contrast and saturation.
+  - `golang.org/x/image/webp`: to support decoding `.webp` images.
 
 ## Installation
 
-1. Clone or download this repository.
-2. Install Go and set up your Go environment if you haven't already.
+1. Clone the repository or create a Go module and include the necessary dependencies.
+2. Install Go and make sure the following dependencies are installed:
 
 ```bash
-go mod tidy
-```
-
-3. Install dependencies:
-
-```bash
-go get github.com/disintegration/imaging
-go get golang.org/x/image/webp
+go get -u github.com/disintegration/imaging
+go get -u golang.org/x/image/webp
 ```
 
 ## Usage
 
-1. Place the Go source file in your desired project folder.
-2. Place all the `.webp` files you want to convert into the same folder (or adjust the `folder` variable in the code to point to your folder of choice).
-3. Run the program:
+### Running the Program
+
+1. Place your `.webp` images in the same directory as the program.
+2. Run the program:
 
 ```bash
 go run main.go
 ```
 
-The program will:
+The program will read all `.webp` files in the directory, convert them to `.jpg`, apply the HDR adjustments, and save them as new `.jpg` files in the same folder.
 
-- Read all files in the folder.
-- Convert each `.webp` file to `.jpg` with the same name, applying the following adjustments:
-  - Sharpening: 1.2x strength
-  - Brightness: +5
-  - Contrast: +10
-  - Saturation: +5
-- The converted files will be saved as `.jpg` in the same folder.
+### Folder Structure
 
-### Example
+The program expects the following folder structure:
 
-If the folder contains a file named `image.webp`, the output file will be `image.jpg`.
+```
+.
+├── main.go
+├── image1.webp
+├── image2.webp
+└── ...
+```
 
-## Error Handling
+For every `.webp` file, it will generate a corresponding `.jpg` file in the same folder.
 
-- If the program fails to read the folder or process any files, it will output a corresponding error message.
+## How It Works
+
+1. **Reading and Looping through Files**: The program reads the contents of the current directory and loops through all files. It skips directories and non-WebP files.
+2. **Converting the WebP to JPEG**: 
+   - It opens and decodes the `.webp` image file.
+   - It resizes the image to 1920px in the larger dimension while maintaining the aspect ratio.
+   - It sharpens the image and applies contrast and saturation adjustments.
+3. **Saving the JPEG Image**: The image is saved as a high-quality `.jpg` with HDR-like enhancements.
+
+## Code Details
+
+- The `main()` function reads the folder and processes `.webp` files.
+- The `convertWebPToJPEGWithHDR()` function performs the image processing, including resizing, sharpening, contrast adjustment, and saturation adjustment.
+- It then saves the processed image as `.jpg` using JPEG encoding with a quality of 100.
+
+## Example Output
+
+```
+Converted: ./image1.webp -> ./image1.jpg
+Converted: ./image2.webp -> ./image2.jpg
+```
 
 ## License
 
-This program is open-source software released under the MIT License.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
